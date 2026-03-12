@@ -8,7 +8,8 @@
 //! - `Receiver::recv()` receives a message
 //! - Multiple producers can be created via `Sender::clone()`
 
-use std::sync::mpsc;
+use std::sync::mpsc::channel;
+use std::sync::Arc;
 use std::thread;
 
 /// Create a producer thread that sends each element from items into the channel.
@@ -18,7 +19,18 @@ pub fn simple_send_recv(items: Vec<String>) -> Vec<String> {
     // TODO: Spawn thread to send each element in items
     // TODO: In main thread, receive all messages and collect into Vec
     // Hint: When all Senders are dropped, recv() returns Err
-    todo!()
+    let (tx, rx) = channel();
+    thread::spawn(move || {
+        for s in items {
+            tx.send(s).unwrap();
+        }
+    });
+
+    let mut result = Vec::new();
+    for s in rx {
+        result.push(s);
+    }
+    result
 }
 
 /// Create `n_producers` producer threads, each sending a message in format `"msg from {id}"`.
@@ -30,7 +42,20 @@ pub fn multi_producer(n_producers: usize) -> Vec<String> {
     // TODO: Clone a sender for each producer
     // TODO: Remember to drop the original sender, otherwise receiver won't finish
     // TODO: Collect all messages and sort
-    todo!()
+    let (tx, rx) = channel();
+    let tx = Arc::new(tx);
+    for i in 0..n_producers {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            tx.send(format!("msg from {}", i)).unwrap();
+        });
+    }
+    let mut result = Vec::new();
+    for s in rx {
+        result.push(s);
+    }
+    result.sort();
+    result
 }
 
 #[cfg(test)]
