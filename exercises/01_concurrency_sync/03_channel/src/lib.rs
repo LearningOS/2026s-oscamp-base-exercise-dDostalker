@@ -50,6 +50,7 @@ pub fn multi_producer(n_producers: usize) -> Vec<String> {
             tx.send(format!("msg from {}", i)).unwrap();
         });
     }
+    drop(tx);
     let mut result = Vec::new();
     for s in rx {
         result.push(s);

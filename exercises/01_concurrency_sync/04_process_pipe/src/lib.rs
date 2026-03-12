@@ -210,12 +210,21 @@ pub fn pipe_through_grep(pattern: &str, input: &str) -> String {
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    let mut stdin = grep.stdin.take().unwrap();
-    for line in input.lines() {
-        stdin.write_all(line.as_bytes()).unwrap();
+
+    {
+        let mut stdin = grep.stdin.take().unwrap();
+        // Write entire input, preserving newlines
+        stdin.write_all(input.as_bytes()).unwrap();
+        // stdin is dropped here, closing the pipe
     }
+
     let mut output = String::new();
-    grep.stdout.unwrap().read_to_string(&mut output).unwrap();
+    grep.stdout
+        .take()
+        .unwrap()
+        .read_to_string(&mut output)
+        .unwrap();
+    grep.wait().unwrap();
     output
 }
 
