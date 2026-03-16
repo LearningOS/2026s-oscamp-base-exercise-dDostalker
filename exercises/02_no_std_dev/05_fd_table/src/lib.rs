@@ -38,7 +38,7 @@
 //! - fd number reuse strategy (find smallest free slot)
 //! - `Arc` reference counting and resource release
 
-use std::sync::Arc;
+use std::{sync::Arc, usize};
 
 /// File abstraction trait — all "files" in the kernel (regular files, pipes, sockets) implement this
 pub trait File: Send + Sync {
@@ -50,40 +50,52 @@ pub trait File: Send + Sync {
 pub struct FdTable {
     // TODO: Design the internal structure
     // Hint: use Vec<Option<Arc<dyn File>>>
-    //       the index is the fd number, None means the fd is closed or unallocated
+    //       the index is the fd number, None means the fd is closed or unallocate
+    fd: Vec<Option<(Arc<dyn File>)>>,
 }
 
 impl FdTable {
     /// Create an empty fd table
     pub fn new() -> Self {
-        // TODO
-        todo!()
+        FdTable { fd: vec![] }
     }
 
     /// Allocate a new fd, return the fd number.
     ///
     /// Prefers reusing the smallest closed fd number; if no free slot, appends to the end.
     pub fn alloc(&mut self, file: Arc<dyn File>) -> usize {
-        // TODO
-        todo!()
+        for (i, slot) in self.fd.iter_mut().enumerate() {
+            if slot.is_none() {
+                *slot = Some(file);
+                return i;
+            }
+        }
+
+        self.fd.push(Some(file));
+        self.fd.len() - 1
     }
 
     /// Get the file object for an fd. Returns None if the fd doesn't exist or is closed.
     pub fn get(&self, fd: usize) -> Option<Arc<dyn File>> {
-        // TODO
-        todo!()
+        match self.fd.get(fd) {
+            Some(f) => f.clone(),
+            None => None,
+        }
     }
 
     /// Close an fd. Returns true on success, false if the fd doesn't exist or is already closed.
     pub fn close(&mut self, fd: usize) -> bool {
-        // TODO
-        todo!()
+        match self.fd.get_mut(fd) {
+            Some(f) => *f = None,
+            None => return false,
+        };
+        true
     }
 
     /// Return the number of currently allocated fds (excluding closed ones)
     pub fn count(&self) -> usize {
         // TODO
-        todo!()
+        self.fd.iter().filter(|&x| x.is_some()).count()
     }
 }
 
