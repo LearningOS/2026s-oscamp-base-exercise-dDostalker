@@ -31,7 +31,7 @@
 //! Each function includes a `TODO` comment indicating where you need to write code.
 //! Run `cargo test` to check your implementations.
 
-use std::io::{self, Read, Stdout, Write};
+use std::io::{self, Read, Write};
 use std::process::{Command, Stdio};
 
 /// Execute the given shell command and return its stdout output.
