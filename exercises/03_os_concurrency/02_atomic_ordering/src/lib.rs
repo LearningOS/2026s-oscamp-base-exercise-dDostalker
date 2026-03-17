@@ -40,7 +40,8 @@ impl FlagChannel {
     pub fn produce(&self, value: u32) {
         // TODO: Store data (choose appropriate Ordering)
         // TODO: Set ready = true (choose appropriate Ordering so data writes complete before this)
-        todo!()
+        self.data.store(value, Ordering::Relaxed);
+        self.ready.store(true, Ordering::Release);
     }
 
     /// Consumer: spin-wait for ready flag, then read data.
@@ -51,7 +52,10 @@ impl FlagChannel {
     pub fn consume(&self) -> u32 {
         // TODO: Spin-wait for ready to become true (choose appropriate Ordering)
         // TODO: Read data (choose appropriate Ordering)
-        todo!()
+        while !self.ready.load(Ordering::Acquire) {
+            std::hint::spin_loop();
+        }
+        self.data.load(Ordering::Relaxed)
     }
 
     /// Reset channel state
@@ -81,15 +85,31 @@ impl OnceCell {
     ///
     /// Hint: use `compare_exchange` to ensure only one thread succeeds.
     pub fn init(&self, val: u32) -> bool {
-        // TODO: Use compare_exchange to ensure initialization only once
-        // Store value on success
-        todo!()
+        if self
+            .initialized
+            .compare_exchange(
+                false,
+                true,
+                Ordering::AcqRel,  // 成功
+                Ordering::Acquire, // 失败
+            )
+            .is_ok()
+        {
+            // 只有一个线程能进来
+            self.value.store(val, Ordering::Relaxed);
+            true
+        } else {
+            false
+        }
     }
 
     /// Get value. Returns Some if initialized, otherwise None.
     pub fn get(&self) -> Option<u32> {
-        // TODO: Check initialized flag, then read value
-        todo!()
+        if self.initialized.load(Ordering::Acquire) {
+            Some(self.value.load(Ordering::Relaxed))
+        } else {
+            None
+        }
     }
 }
 

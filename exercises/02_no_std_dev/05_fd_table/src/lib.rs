@@ -51,7 +51,7 @@ pub struct FdTable {
     // TODO: Design the internal structure
     // Hint: use Vec<Option<Arc<dyn File>>>
     //       the index is the fd number, None means the fd is closed or unallocate
-    fd: Vec<Option<(Arc<dyn File>)>>,
+    fd: Vec<Option<Arc<dyn File>>>,
 }
 
 impl FdTable {
