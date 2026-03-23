@@ -62,8 +62,8 @@ impl TaskContext {
     /// - Set `sp = stack_top` with 16-byte alignment (RISC-V ABI requires 16-byte aligned stack at function entry).
     /// - Leave `s0`–`s11` zero; they will be loaded on switch.
     pub fn init(&mut self, stack_top: usize, entry: usize) {
-        self.sp = stack_top & !0xF;
-        self.ra = entry;
+        self.sp = (stack_top & !0xF) as u64;
+        self.ra = entry as u64;
         self.s0 = 0;
         self.s1 = 0;
         self.s2 = 0;
@@ -85,8 +85,8 @@ impl TaskContext {
 ///
 /// Must be `#[unsafe(naked)]` to prevent the compiler from generating a prologue/epilogue.
 #[unsafe(naked)]
-pub unsafe fn switch_context(old: &mut TaskContext, new: &TaskContext) {
-    core::arch::asm!(
+pub unsafe extern "C" fn switch_context(old: &mut TaskContext, new: &TaskContext) {
+    core::arch::naked_asm!(
         // Save current context to old (a0)
         "sd sp, 0(a0)",
         "sd ra, 8(a0)",
@@ -122,7 +122,6 @@ pub unsafe fn switch_context(old: &mut TaskContext, new: &TaskContext) {
         "li a1, 0",
         // Return to new context's return address
         "ret",
-        options(noreturn)
     );
 }
 

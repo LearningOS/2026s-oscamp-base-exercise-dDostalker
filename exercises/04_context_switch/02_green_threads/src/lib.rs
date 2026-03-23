@@ -140,8 +140,8 @@ impl Scheduler {
         let stack = vec![0u8; STACK_SIZE];
         let stack_top = stack.as_ptr() as usize + STACK_SIZE;
         let ctx = TaskContext {
-            ra: thread_wrapper as usize,
-            sp: (stack_top - 16) & !15,
+            ra: thread_wrapper as u64,
+            sp: ((stack_top - 16) & !15) as u64,
             ..Default::default()
         };
         self.threads.push(GreenThread {
@@ -182,13 +182,14 @@ impl Scheduler {
         self.threads[next].state = ThreadState::Running;
         if let Some(entry) = self.threads[next].entry.take() {
             unsafe {
-                CURRENT_THREAD_ENTRY = entry;
+                CURRENT_THREAD_ENTRY = Some(entry);
             }
         }
+        self.current = next;
         unsafe {
             switch_context(
-                self.threads[current].ctx.as_mut_ptr(),
-                self.threads[next].ctx.as_mut_ptr(),
+                &mut *self.threads[current].ctx.as_mut_ptr(),
+                &mut *self.threads[next].ctx.as_mut_ptr(),
             );
         }
     }
